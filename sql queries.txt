@@ -1,0 +1,76 @@
+/*Query 1 - the query used for the first insight*/
+SELECT film_title, category_name, COUNT(film_id) as rental_count
+FROM ( SELECT 
+    f.film_id as film_id,
+                f.title as film_title,
+                fc.category_id,
+                i.inventory_id,
+                r.rental_id,
+    c.name as category_name
+                FROM film f
+                JOIN film_category fc
+                ON f.film_id=fc.film_id
+                JOIN category c
+                ON c.category_id=fc.category_id
+      AND c.name IN ('Animation', 'Children',           'Classics', 'Comedy', 'Family', 'Music')
+                JOIN inventory i
+                ON f.film_id=i.film_id
+                JOIN rental r
+                ON r.inventory_id=i.inventory_id
+) f1
+GROUP BY 1,2
+ORDER BY 2,1;
+
+
+/*Query 2 - the query used for the second insight*/
+SELECT film_title, category_name, rental_duration,
+NTILE(4) OVER (ORDER BY rental_duration) as standard_quartile
+FROM ( SELECT 
+      f.rental_duration as rental_duration,
+      f.title as film_title,
+      c.name as category_name
+      FROM film f
+      JOIN film_category fc
+      ON f.film_id=fc.film_id
+      JOIN category c
+      ON c.category_id=fc.category_id
+      AND c.name IN ('Animation', 'Children',           'Classics', 'Comedy', 'Family', 'Music')
+) f1
+GROUP BY 1,2,3
+ORDER BY 3;
+
+
+/*Query 3 - the query used for the third insight*/
+SELECT category_name,
+standard_quartile, COUNT(category_name)
+FROM ( SELECT 
+      f.rental_duration as rental_duration,
+      c.name as category_name,
+      NTILE(4) OVER (ORDER BY rental_duration) as standard_quartile
+      FROM film f
+      JOIN film_category fc
+      ON f.film_id=fc.film_id
+      JOIN category c
+      ON c.category_id=fc.category_id
+      AND c.name IN ('Animation', 'Children',           'Classics', 'Comedy', 'Family', 'Music')
+) f1
+GROUP BY 1,2
+ORDER BY 1,2;
+
+
+/*Query 4 - the query used for the fourth insight*/
+SELECT rental_month, rental_year,
+store_id,
+count(*) as count_rentals
+FROM (
+                SELECT s.store_id as store_id,
+                DATE_PART('month', r.rental_date) as rental_month,
+                DATE_PART('year', r.rental_date) as rental_year
+               FROM store st
+                JOIN staff s
+                ON st.store_id = s.store_id
+                JOIN rental r 
+                ON s.staff_id = r.staff_id
+)f1
+GROUP BY 1,2,3
+ORDER BY 4 DESC;
